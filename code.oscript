@@ -1,0 +1,74 @@
+{
+    init: `{
+        if(array_length(unit[trigger.unit].authors) != 1)
+            bounce('multi signature not allowed');
+        if(trigger.output[[asset!=base]].asset != 'none'){
+            $asset = trigger.output[[asset!=base]].asset;
+            if($asset and $asset == 'ambiguous') 
+                bounce('Only 1 asset per tx');
+        }
+        else
+            $asset = 'base';
+    }`,
+    "messages": {
+        "cases": [
+            {
+                if: `{$asset != 'base'}`,
+                init: `{
+                    if(!trigger.data.to or !is_valid_address(trigger.data.to))
+                        bounce('to param invalid');
+                    $c = unit[trigger.unit].headers_commission + unit[trigger.unit].payload_commission;
+                    if($c > 1000)
+                        $trigger_cost = 1000;
+                    else
+                        $trigger_cost = $c;
+                }`,
+                "messages": [
+                    {
+                        "app": "payment",
+                        "payload": {
+                            "asset": `{$asset}`,
+                            "outputs": [
+                                {
+                                    "address": "{trigger.data.to}",
+                                    "amount": `{trigger.output[[asset=$asset]]}`
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "app": "payment",
+                        "payload": {
+                            "asset": 'base',
+                            "outputs": [
+                                {
+                                    "address": "{trigger.address}",
+                                    "amount": `{trigger.output[[asset=base]]+$trigger_cost}`
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "app": "state",
+                        "state": `{
+                            $tot = unit[response_unit].headers_commission + unit[response_unit].payload_commission + $trigger_cost;
+                            if((balance[base] - trigger.output[[asset=base]]) < $tot)
+                                bounce('out of funds');
+                        }`
+                    }
+                    
+                ]
+            },
+            {
+                "messages": [
+                    {
+                        "app": "state",
+                        "state": `{
+                            response['message'] = 'thanks for funds';
+                        }`
+                    }
+                ]
+            }
+        ]
+    }
+}
