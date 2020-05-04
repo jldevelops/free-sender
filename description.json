@@ -1,6 +1,6 @@
 {
 	"version": "1.0",
-	"description": "Free sender of assets. Allows 3rd parties to fund asset transactions",
+	"description": "Free sender of assets. Allows 3rd parties to pay transfers fees of any asset",
 	"homepage_url": "https://github.com/jldevelops/free-sender",
 	"source_url": "https://github.com/jldevelops/free-sender"
 }
